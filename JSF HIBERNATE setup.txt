@@ -1,0 +1,145 @@
+Pobieramy eclipse EE x64
+
+Instalujemy z help -> install new software:
+	Jboss Tools - http://download.jboss.org/jbosstools/updates/stable/
+z JBoss Web wybieramy: Hibernate Tools
+
+Serwers new serwer add tomcat8 pobieramy tomcata i wskazujemy t¹ lokalizacjê
+
+File -> new -> dynamic web project 
+	Target -> Apache Tomcat v8.0
+	Dynamic web -> 3.1
+	Configuration modify -> zaznaczamy: JavaServer Faces
+	next -> next -> zaznaczamy: generate web.xml
+	next -> klikamy na ikone download library -> wybieramy JSF 2.2 (Mojarra 2.2.0)
+		| lub jak mamy wybieramy JSF 2.2 (Mojarra 2.2.0)
+	finish
+
+W projekcie w Java Resources -> src 
+	tworzymy katalog META-INF a w nim plik persistence.xml z zawartoœci¹
+			<persistence xmlns="http://java.sun.com/xml/ns/persistence"
+						 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+						 xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd"
+						 version="2.0">
+			   <persistence-unit name="bazy" transaction-type="RESOURCE_LOCAL">
+				  <provider>org.hibernate.ejb.HibernatePersistence</provider>
+				  <properties>
+					 <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
+					 <property name="javax.persistence.jdbc.user" value="root"/>
+					 <property name="javax.persistence.jdbc.password" value="haslo01k"/>
+					 <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/bazy"/>
+					 <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL5Dialect"/>
+					 <property name="hibernate.hbm2ddl.auto" value="update"/>
+				  </properties>
+			   </persistence-unit>
+			</persistence>
+
+tworzymy package com.haks.javase a w nim Main.java z zawartoœci¹
+			package com.haks.javase;
+			import com.haks.entities.Dao;
+			import com.haks.entities.Users;
+
+			public class Main {
+
+				public static void main(String[] args) {
+
+					Users user = new Users();
+					user.setName("Laluœ");
+					user.setEmail("xxx@xx.xx");
+					user.setPassword("password");
+					
+					/*Dao dao = new Dao();
+					dao.open();
+					dao.getEntityManager().persist(user);
+					dao.close();*/
+					
+					new Dao().fastPersist(user);
+				}
+
+			}
+
+tworzymy package com.haks.entities a w nim Dao.java
+			package com.haks.entities;
+
+			import javax.persistence.EntityManager;
+			import javax.persistence.EntityManagerFactory;
+			import javax.persistence.Persistence;
+
+			public class Dao {
+				
+				public static EntityManagerFactory entityManagerFactory;
+				
+				static{
+					entityManagerFactory = Persistence.createEntityManagerFactory("bazy");
+				}
+				EntityManager entityManager;
+
+				public void open(){
+					entityManager = Dao.entityManagerFactory.createEntityManager();
+					entityManager.getTransaction().begin();
+					
+				}
+				public EntityManager getEntityManager(){
+					return entityManager;
+				}
+				public void close() {
+					entityManager.getTransaction().commit();
+					entityManager.close();
+					//entityManagerFactory.close();
+				}
+				public void fastPersist(Object e){
+					e = e.getClass().cast(e);
+					this.open();
+					this.getEntityManager().persist(e);
+					this.close();
+				}
+
+			}
+
+w WebContent WEB-INF lib wrzucamy biblioteki hibernate (required) + entityManager (tez w paczce z hibernate)+ primedafaces + mysqlDriverJDBC
+
+PPM na project -> Project Facets zaznaczamy JPA -> klikamy: Further configuration available 
+	Type: hibernate
+	JPA implementation: disable
+	Connection: add connection 
+	name: MySQLconn
+	next
+	drivers: wybieramy nasz z WebContent mimo ¿e jest to wybieramy jeszcze raz jak jest b³¹d 
+	podajemy dane bazy (nazwabazy login has³o) klikamy save password i na koniec klikamy test 
+	next finish
+	!!!zaznaczamy Discover annotated classes automaticly 
+	zaznaczamy add driver library to build path 
+	ok, apply i ok 
+
+//Roimy plik(encjê) users w com.entities
+//odpalamy i dzia³a 
+//INFO: HHH000228: Running hbm2ddl schema update
+//wywalamy plik users 
+
+PPM na nasz projekt -> hibernate -> enable hibernate support zaznaczamy nasz projekt
+PPM na projekt -> JPA tools -> generate entities from table -> wybieramy paczke com.haks.entities i samo utrzoy Users.java
+	w pliku users zamieniamy 
+	@Table(name = "users", catalog = "bazy")
+	na 
+	@Table(name = "users")
+	bo siê czepia
+
+odpalamy main i powinno dzia³aæ  (dziala jak ostatnia linia)INFO: HHH000228: Running hbm2ddl schema update
+
+
+Kopiujemy templates do web-inf
+Kopiujemy index i welcome do web content
+
+
+Robimy package com.haks.managedBeans
+Kopiujemy ChartView.java i LoginBean.java
+
+Odpalamy login.xhtml przez Tomcata 8.0
+
+u mnie dzia³a
+
+
+Czêsto trzeba wejœæ w PPM -> JPA -> Connection -> Add connection i pobawiæ siê i dodaæ nasz mysqlDriver 
+
+
+
